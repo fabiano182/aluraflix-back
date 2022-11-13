@@ -1,4 +1,4 @@
-import { IsEmpty, IsNotEmpty, IsString, IsUrl, Contains, IsOptional } from 'class-validator';
+import { IsEmpty, IsNotEmpty, IsString, IsUrl, Contains, IsOptional, IsNumber } from 'class-validator';
 
 export class updateVideoDTO {
 
@@ -21,4 +21,10 @@ export class updateVideoDTO {
     @Contains('youtube.com', { message: 'A url deve ser do youtube' })
     @IsOptional()
     url: string;
+
+    @IsNumber()
+    @IsNotEmpty({ message: 'A descrição não pode ser vazia' })
+    @IsOptional()
+    categoryId: number;
+
 }

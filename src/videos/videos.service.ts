@@ -2,30 +2,44 @@ import { Injectable, Param } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { createVideoDTO } from './dto/createVideoDTO';
+import { listVideoDTO } from './dto/listVideoDTO';
 import { updateVideoDTO } from './dto/updateVideoDTO';
-import Video from './video.entity';
+import VideoEntity from './video.entity';
 
 @Injectable()
 export class VideosService {
 
     constructor(
-        @InjectRepository(Video)
-        private readonly videosRepository: Repository<Video>,
+        @InjectRepository(VideoEntity)
+        private readonly videosRepository: Repository<VideoEntity>,
     ) { }
 
-    async getVideos(): Promise<Video[]> {
-        return this.videosRepository.find();
+    async getVideos(): Promise<listVideoDTO[]> {
+        const videos = await this.videosRepository.createQueryBuilder('videos')
+            .innerJoinAndSelect('videos.categoryId', 'categories')
+            .select(['videos.id', 'videos.title', 'videos.description', 'videos.url', 'categories.id'])
+            .getMany();
+
+        videos.forEach(video => {
+            video.categoryId = video.categoryId['id'];
+        });
+
+        return videos;
     }
 
-    async getVideo(id: number): Promise<Video> {
+    async getVideo(id: number): Promise<VideoEntity> {
         return this.videosRepository.findOneBy({ id });
     }
 
-    async createVideo(video: createVideoDTO): Promise<Video> {
+    async createVideo(video: createVideoDTO): Promise<VideoEntity> {
+        const newVideo = this.videosRepository.create(video);
+        if (video.categoryId == null) {
+            newVideo.categoryId = 1;
+        }
         return this.videosRepository.save(video);
     }
 
-    async updateVideo(id: number, video: updateVideoDTO): Promise<Video> {
+    async updateVideo(id: number, video: updateVideoDTO): Promise<VideoEntity> {
         const videoToUpdate = await this.videosRepository.findOneBy({ id });
 
         if (video.title) {
@@ -41,7 +55,7 @@ export class VideosService {
         return this.videosRepository.save(videoToUpdate);
     }
 
-    async deleteVideo( id: number): Promise<{ message: string }> {
+    async deleteVideo(id: number): Promise<{ message: string }> {
         const deleteResult = await this.videosRepository.delete(id)
 
         if (deleteResult.affected > 0) {
